@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Tạo axios instance với base URL
+// Tạo một axios instance với base URL
 const api = axios.create({
   baseURL: process.env.NODE_ENV === 'production' 
     ? 'https://your-backend-url.com/api' 
@@ -11,33 +11,33 @@ const api = axios.create({
   }
 });
 
-// Interceptors để handle errors
+// Interceptors để xử lý lỗi từ API
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
     
     if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-      throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra server có đang chạy.');
+      throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra xem server có đang chạy không.');
     }
     
     if (error.response) {
-      // Server responded with error status
+      // Server trả về lỗi với status code
       const message = error.response.data?.error || error.response.data?.message || 'Lỗi từ server';
       throw new Error(message);
     }
     
     if (error.request) {
-      // Request was made but no response
+      // Request đã được gửi nhưng không nhận được phản hồi
       throw new Error('Không nhận được phản hồi từ server');
     }
     
-    // Something else happened
+    // Các lỗi khác
     throw new Error(error.message || 'Đã có lỗi xảy ra');
   }
 );
 
-// Todo service functions
+// Các hàm thao tác với Todo API
 export const getAllTodos = async () => {
   try {
     const response = await api.get('/todos');
@@ -95,7 +95,7 @@ export const toggleTodo = async (id) => {
   }
 };
 
-// Health check function
+// Hàm kiểm tra tình trạng server (health check)
 export const checkHealth = async () => {
   try {
     const response = await api.get('/health');
