@@ -27,7 +27,12 @@ router.get('/', todoController.getAllTodos);
 router.post('/', todoController.createTodo);
 router.put('/:id', todoController.updateTodo);
 router.delete('/:id', todoController.deleteTodo);
+
+// File attachment routes
 router.post('/:id/upload', upload.single('file'), todoController.uploadFile);
+router.delete('/:id/attachments/:attachmentId', todoController.removeAttachment);
+
+// Import/Export routes
 router.get('/export/json', todoController.exportTodos);
 router.post('/import/json', upload.single('file'), todoController.importTodos);
 

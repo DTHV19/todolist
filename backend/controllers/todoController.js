@@ -6,8 +6,8 @@ const fs = require('fs');
  */
 exports.getAllTodos = async (req, res) => {
   try {
-    const { page, limit, search, priority, status } = req.query;
-    const result = await todoService.getAllTodos({ page, limit, search, priority, status });
+    const { page, limit, search, priority, status, sortBy } = req.query;
+    const result = await todoService.getAllTodos({ page, limit, search, priority, status, sortBy });
     res.json({
       success: true,
       data: result,
@@ -113,16 +113,82 @@ exports.deleteTodo = async (req, res) => {
   }
 };
 
-// Upload file cho 1 todo
-exports.uploadFile = (req, res) => {
+/**
+ * Upload file attachment to a todo
+ */
+exports.uploadFile = async (req, res) => {
   try {
-    const attachment = todoService.uploadFile(req.params.id, req.file);
-    if (!attachment) {
-      return res.status(404).json({ message: 'Todo không tồn tại' });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'No file uploaded',
+          details: 'Please select a file to upload'
+        }
+      });
     }
-    res.json({ message: 'Upload file thành công', attachment });
+
+    const result = await todoService.uploadFile(req.params.id, req.file);
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: 'Todo not found',
+          details: 'The requested todo does not exist'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'File uploaded successfully'
+    });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('Error in uploadFile:', err);
+    res.status(400).json({
+      success: false,
+      error: {
+        message: 'Failed to upload file',
+        details: err.message
+      }
+    });
+  }
+};
+
+/**
+ * Remove file attachment from a todo
+ */
+exports.removeAttachment = async (req, res) => {
+  try {
+    const { id, attachmentId } = req.params;
+    const todo = await todoService.removeAttachment(id, attachmentId);
+    
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          message: 'Todo not found',
+          details: 'The requested todo does not exist'
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: todo,
+      message: 'Attachment removed successfully'
+    });
+  } catch (err) {
+    console.error('Error in removeAttachment:', err);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to remove attachment',
+        details: err.message
+      }
+    });
   }
 };
 

@@ -10,9 +10,9 @@ const API_BASE_URL = 'http://localhost:5000/api/todos';
  * @param {string} dueDate Due date filter
  * @returns {Promise<Object>} Todos and pagination info
  */
-export const getAllTodos = async (page=1, limit=5, search='', priority='', status='' , dueDate='') => {
+export const getAllTodos = async (page=1, limit=5, search='', priority='', status='', dueDateFilter='', sortBy='createdAt') => {
   try {
-    const params = new URLSearchParams({ page, limit, search, priority, status, dueDate });
+    const params = new URLSearchParams({ page, limit, search, priority, status, dueDateFilter, sortBy });
     const res = await fetch(`${API_BASE_URL}?${params}`);
     
     if (!res.ok) {
@@ -184,13 +184,73 @@ export const exportTodos = async () => {
   }
 };
 
-// Upload file cho 1 todo
+/**
+ * Upload file attachment to a todo
+ * @param {string} todoId Todo ID
+ * @param {File} file File to upload
+ * @returns {Promise<Object>} Upload result
+ */
 export const uploadFile = async (todoId, file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch(`${API_BASE_URL}/${todoId}/upload`, { method: 'POST', body: formData });
-  if (!res.ok) throw new Error('Không thể upload file');
-  return res.json();
+  try {
+    if (!file) {
+      throw new Error('Vui lòng chọn file để upload');
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('File ảnh quá lớn. Kích thước tối đa là 5MB');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const res = await fetch(`${API_BASE_URL}/${todoId}/upload`, { 
+      method: 'POST', 
+      body: formData 
+    });
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.error?.details || result.error?.message || 'Failed to upload file');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw new Error(error.message || 'Failed to upload file');
+  }
+};
+
+/**
+ * Remove file attachment from a todo
+ * @param {string} todoId Todo ID
+ * @param {string} attachmentId Attachment ID
+ * @returns {Promise<Object>} Updated todo
+ */
+export const removeAttachment = async (todoId, attachmentId) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/${todoId}/attachments/${attachmentId}`, { 
+      method: 'DELETE' 
+    });
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.error?.details || result.error?.message || 'Failed to remove attachment');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error removing attachment:', error);
+    throw new Error(error.message || 'Failed to remove attachment');
+  }
 };
 
 
@@ -201,7 +261,8 @@ const TodoService = {
   deleteTodo,
   importTodos,
   exportTodos,
-  uploadFile
+  uploadFile,
+  removeAttachment
 };
 
 export default TodoService;

@@ -2,29 +2,81 @@ const todoModel = require('../models/todoModel');
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Get all todos with pagination and filtering
- * @param {Object} options Filter and pagination options
- * @returns {Object} Todos and pagination info
- */
-exports.getAllTodos = async ({ page = 1, limit = 5, search = '', priority = '', status = '' }) => {
+// Lấy tất cả todos với phân trang và lọc
+exports.getAllTodos = async ({ page = 1, limit = 5, search = '', priority = '', status = '', sortBy = 'createdAt' }) => {
   let todos = todoModel.readTodos();
 
-  // Filters
+  // Lọc dữ liệu
   if (search) {
     todos = todos.filter(todo =>
       todo.title.toLowerCase().includes(search.toLowerCase()) ||
       todo.description.toLowerCase().includes(search.toLowerCase())
     );
   }
-  if (priority) todos = todos.filter(todo => todo.priority === priority);
+  
+  // Sửa logic filter priority - chuẩn hóa priority trước khi so sánh
+  if (priority) {
+    todos = todos.filter(todo => {
+      const todoPriority = (todo.priority || 'medium').toLowerCase();
+      return todoPriority === priority.toLowerCase();
+    });
+  }
+  
   if (status === 'completed') todos = todos.filter(todo => todo.completed);
   if (status === 'pending') todos = todos.filter(todo => !todo.completed);
 
-  // Sort by creation date
-  todos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  // Pagination
+  // Sắp xếp
+  todos.sort((a, b) => {
+    switch (sortBy) {
+      case 'dueDate':
+        // Sắp xếp theo thời hạn: sắp tới trước, xa nhất sau, quá hạn cuối, không có hạn cuối cùng
+        const aDate = a.dueDate ? new Date(a.dueDate) : null;
+        const bDate = b.dueDate ? new Date(b.dueDate) : null;
+        const now = new Date();
+        
+        // Không có ngày hết hạn -> cuối cùng
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        
+        const aOverdue = aDate < now && !a.completed;
+        const bOverdue = bDate < now && !b.completed;
+        
+        // Cả 2 đều quá hạn -> sắp xếp theo ngày (gần nhất trước)
+        if (aOverdue && bOverdue) return bDate - aDate;
+        
+        // Cả 2 đều chưa quá hạn -> sắp xếp theo ngày (gần nhất trước)
+        if (!aOverdue && !bOverdue) return aDate - bDate;
+        
+        // Một cái quá hạn, một cái chưa -> chưa quá hạn lên trước
+        if (aOverdue && !bOverdue) return 1;
+        if (!aOverdue && bOverdue) return -1;
+        
+        return 0;
+        
+      case 'priority':
+        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+        const aPriority = priorityOrder[a.priority] || 0;
+        const bPriority = priorityOrder[b.priority] || 0;
+        return bPriority - aPriority; // Ưu tiên cao trước
+        
+      case 'title':
+        return a.title.localeCompare(b.title);
+        
+      case 'status':
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1; // Chưa hoàn thành trước
+        }
+        return new Date(b.createdAt) - new Date(a.createdAt);
+        
+      case 'createdAt':
+      default:
+        return new Date(b.createdAt) - new Date(a.createdAt); // Mới nhất trước
+    }
+  });
+
+  // Phân trang
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
   const startIndex = (pageNum - 1) * limitNum;
@@ -66,7 +118,31 @@ exports.updateTodo = async (id, updates) => {
   const todos = todoModel.readTodos();
   const idx = todos.findIndex(t => t.id === id);
   if (idx === -1) return null;
-  todos[idx] = { ...todos[idx], ...updates, updatedAt: new Date().toISOString() };
+  
+  const oldTodo = { ...todos[idx] };
+  const now = new Date().toISOString();
+  
+  // Tạo lịch sử chỉnh sửa
+  const editHistory = oldTodo.editHistory || [];
+  editHistory.push({
+    editedAt: now,
+    changes: updates,
+    previousValues: {
+      title: oldTodo.title,
+      description: oldTodo.description,
+      priority: oldTodo.priority,
+      dueDate: oldTodo.dueDate,
+      completed: oldTodo.completed
+    }
+  });
+  
+  todos[idx] = { 
+    ...oldTodo, 
+    ...updates, 
+    updatedAt: now,
+    editHistory: editHistory
+  };
+  
   todoModel.writeTodos(todos);
   return todos[idx];
 };
@@ -90,6 +166,110 @@ exports.deleteTodo = async (id) => {
   return true;
 };
 
+
+// Upload file ảnh vào todo
+exports.uploadFile = async (todoId, file) => {
+  if (!file) throw new Error('No file uploaded');
+  
+  const todos = todoModel.readTodos();
+  const todoIndex = todos.findIndex(t => t.id === todoId);
+  
+  if (todoIndex === -1) {
+    // Xóa file nếu không tìm thấy todo
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      console.warn('Không thể xóa file:', error.message);
+    }
+    return null;
+  }
+  
+  // Kiểm tra định dạng file ảnh
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.mimetype)) {
+    // Xóa file không hợp lệ
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      console.warn('Không thể xóa file không hợp lệ:', error.message);
+    }
+    throw new Error('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
+  }
+  
+  // Kiểm tra kích thước file (tối đa 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      console.warn('Không thể xóa file quá lớn:', error.message);
+    }
+    throw new Error('File ảnh quá lớn. Kích thước tối đa là 5MB');
+  }
+  
+  const attachment = {
+    id: Date.now().toString(),
+    filename: file.filename,
+    originalName: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    uploadedAt: new Date().toISOString(),
+    url: `/uploads/${file.filename}`
+  };
+  
+  // Tạo mảng attachments nếu chưa có
+  if (!todos[todoIndex].attachments) {
+    todos[todoIndex].attachments = [];
+  }
+  
+  todos[todoIndex].attachments.push(attachment);
+  todos[todoIndex].updatedAt = new Date().toISOString();
+  
+  todoModel.writeTodos(todos);
+  
+  return {
+    todo: todos[todoIndex],
+    attachment: attachment
+  };
+};
+
+/**
+ * Remove file attachment from a todo
+ * @param {string} todoId Todo ID
+ * @param {string} attachmentId Attachment ID
+ * @returns {Object} Updated todo
+ */
+exports.removeAttachment = async (todoId, attachmentId) => {
+  const todos = todoModel.readTodos();
+  const todoIndex = todos.findIndex(t => t.id === todoId);
+  
+  if (todoIndex === -1) return null;
+  
+  const todo = todos[todoIndex];
+  if (!todo.attachments) return todo;
+  
+  const attachmentIndex = todo.attachments.findIndex(a => a.id === attachmentId);
+  if (attachmentIndex === -1) return todo;
+  
+  const attachment = todo.attachments[attachmentIndex];
+  
+  // Delete file from filesystem
+  const filePath = path.join(__dirname, '..', 'uploads', attachment.filename);
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.warn('Could not delete attachment file:', error.message);
+  }
+  
+  // Remove from attachments array
+  todo.attachments.splice(attachmentIndex, 1);
+  todo.updatedAt = new Date().toISOString();
+  
+  todoModel.writeTodos(todos);
+  
+  return todo;
+};
 
 exports.exportTodos = () => {
   const todos = todoModel.readTodos();

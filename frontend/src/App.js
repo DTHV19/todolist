@@ -8,6 +8,7 @@ import SearchBar from './components/SearchBar';
 import Pagination from './components/Pagination';
 import ImportExportButtons from './components/ImportExportButtons';
 import ImportModal from './components/ImportModal';
+import NotificationContainer, { useNotification } from './components/Notification';
 import { Plus, X } from 'lucide-react';
 
 // 📹 Hàm bỏ dấu tiếng Việt
@@ -21,7 +22,8 @@ const removeVietnameseTones = (str) => {
 
 export default function TodoApp() {
   // State chính - TÁCH pagination thành các state riêng để tránh infinite loop
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState([]); // Todos của trang hiện tại
+  const [allTodos, setAllTodos] = useState([]); // Tất cả todos để đếm filter
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalTodos, setTotalTodos] = useState(0);
@@ -31,6 +33,7 @@ export default function TodoApp() {
     search: '',
     priority: '',
     status: '',
+    sortBy: 'createdAt',
     limit: 10,
   });
   const [showForm, setShowForm] = useState(false);
@@ -40,8 +43,36 @@ export default function TodoApp() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
-  // 📹 Load dữ liệu từ service (sửa dependency để tránh infinite loop)
-  const loadTodos = useCallback(async () => {
+  // Notification system
+  const notification = useNotification();
+
+  // Load tất cả todos để đếm filter (không phân trang)
+  const loadAllTodos = useCallback(async () => {
+    try {
+      const data = await todoService.getAllTodos(
+        1, 
+        1000, // Lấy tất cả todos
+        '',
+        '', // Không filter
+        '', // Không filter
+        '',
+        'createdAt'
+      );
+      
+      const todosData = data.data || data;
+      const allTodosList = todosData?.todos || [];
+      setAllTodos(allTodosList);
+      
+    } catch (err) {
+      console.error('❌ Error loading all todos for filter counts:', err);
+    }
+  }, []);
+
+  // Load dữ liệu từ service - giữ nguyên scroll position
+  const loadTodos = useCallback(async (preserveScroll = false) => {
+    // Lưu vị trí scroll hiện tại
+    const scrollPosition = preserveScroll ? window.pageYOffset : 0;
+    
     try {
       setLoading(true);
       console.log('🔄 Loading todos with params:', {
@@ -54,9 +85,11 @@ export default function TodoApp() {
       const data = await todoService.getAllTodos(
         currentPage,
         filters.limit,
-        '', // ⌐ Không truyền search vào backend nữa (Fuse xử lý ở FE)
+        '', // Không truyền search vào backend (Fuse xử lý ở FE)
         filters.priority,
-        filters.status
+        filters.status,
+        '', // Không sử dụng dueDateFilter nữa
+        filters.sortBy
       );
       
       console.log('✅ Loaded todos:', data);
@@ -83,18 +116,26 @@ export default function TodoApp() {
       setHasPrev(paginationData.hasPrev || false);
       
       setError(null);
+
+      // Khôi phục vị trí scroll
+      if (preserveScroll) {
+        setTimeout(() => {
+          window.scrollTo(0, scrollPosition);
+        }, 100);
+      }
     } catch (err) {
       console.error('❌ Error loading todos:', err);
       setError('Không thể tải todos: ' + err.message);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filters.limit, filters.priority, filters.status]);
+  }, [currentPage, filters.limit, filters.priority, filters.status, filters.sortBy]);
 
-  // 📹 Load todos khi filter / page thay đổi
+  // Load todos khi filter / page thay đổi
   useEffect(() => {
     loadTodos();
-  }, [loadTodos]);
+    loadAllTodos(); // Load tất cả todos để đếm filter
+  }, [loadTodos, loadAllTodos]);
 
   // 📹 Lọc tìm kiếm bằng Fuse.js ở frontend
   const fuse = new Fuse(todos, {
@@ -131,23 +172,32 @@ export default function TodoApp() {
     try {
       if (editingTodo) {
         await todoService.updateTodo(editingTodo.id, todoData);
+        notification.showSuccess('Cập nhật todo thành công!');
       } else {
         await todoService.createTodo(todoData);
+        notification.showSuccess('Tạo todo mới thành công!');
       }
       setShowForm(false);
       setEditingTodo(null);
-      await loadTodos();
+      await loadTodos(true); // Giữ nguyên scroll position
+      await loadAllTodos(); // Cập nhật số lượng filter
     } catch (err) {
-      setError(editingTodo ? 'Không thể cập nhật todo' : 'Không thể tạo todo');
+      const errorMsg = editingTodo ? 'Không thể cập nhật todo' : 'Không thể tạo todo';
+      notification.showError(`${errorMsg}: ${err.message}`);
+      setError(errorMsg);
     }
   };
 
   const handleDeleteTodo = async (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa todo này?')) {
+    const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa todo này?');
+    if (confirmDelete) {
       try {
         await todoService.deleteTodo(id);
-        await loadTodos();
+        notification.showSuccess('Xóa todo thành công!');
+        await loadTodos(true); // Giữ nguyên scroll position
+        await loadAllTodos(); // Cập nhật số lượng filter
       } catch (err) {
+        notification.showError(`Không thể xóa todo: ${err.message}`);
         setError('Không thể xóa todo');
       }
     }
@@ -156,8 +206,12 @@ export default function TodoApp() {
   const handleToggleTodo = async (id, completed) => {
     try {
       await todoService.updateTodo(id, { completed });
-      await loadTodos();
+      const statusMsg = completed ? 'hoàn thành' : 'chưa hoàn thành';
+      notification.showSuccess(`Đã đánh dấu todo ${statusMsg}!`);
+      await loadTodos(true); // Giữ nguyên scroll position
+      await loadAllTodos(); // Cập nhật số lượng filter
     } catch (err) {
+      notification.showError(`Không thể cập nhật trạng thái todo: ${err.message}`);
       setError('Không thể cập nhật todo');
     }
   };
@@ -173,7 +227,9 @@ export default function TodoApp() {
       a.download = 'todos-export.json';
       a.click();
       window.URL.revokeObjectURL(url);
+      notification.showSuccess('Xuất file todos thành công!');
     } catch (err) {
+      notification.showError(`Không thể xuất todos: ${err.message}`);
       setError('Không thể xuất todos');
     }
   };
@@ -201,7 +257,8 @@ export default function TodoApp() {
 
         // Reload dữ liệu nếu có todos mới
         if (totalImported > 0) {
-          await loadTodos();
+          await loadTodos(true); // Giữ nguyên scroll position
+          await loadAllTodos(); // Cập nhật số lượng filter
         }
       } else {
         throw new Error(result.message || 'Phản hồi không hợp lệ từ server');
@@ -265,7 +322,11 @@ export default function TodoApp() {
         />
 
         {/* Bộ lọc khác */}
-        <FilterBar filters={filters} onFilterChange={handleFilterChange} />
+        <FilterBar 
+          filters={filters} 
+          onFilterChange={handleFilterChange}
+          todos={allTodos}
+        />
 
         {showForm && (
           <TodoForm
@@ -296,7 +357,10 @@ export default function TodoApp() {
                 onEdit={handleEditTodo}
                 onDelete={handleDeleteTodo}
                 onToggle={handleToggleTodo}
-                
+                onUpdate={async (preserveScroll) => {
+                  await loadTodos(preserveScroll);
+                  await loadAllTodos();
+                }}
               />
             ))
           )}
@@ -322,6 +386,12 @@ export default function TodoApp() {
             setImportResult(null);
           }}
           importResult={importResult}
+        />
+
+        {/* Notification Container */}
+        <NotificationContainer 
+          notifications={notification.notifications}
+          removeNotification={notification.removeNotification}
         />
       </div>
     </div>
