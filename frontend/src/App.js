@@ -23,7 +23,7 @@ const removeVietnameseTones = (str) => {
 export default function TodoApp() {
   // State chính - TÁCH pagination thành các state riêng để tránh infinite loop
   const [todos, setTodos] = useState([]); // Todos của trang hiện tại
-  const [allTodos, setAllTodos] = useState([]); // Tất cả todos để đếm filter
+  const [statistics, setStatistics] = useState(null); // Thống kê để đếm filter
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalTodos, setTotalTodos] = useState(0);
@@ -46,25 +46,13 @@ export default function TodoApp() {
   // Notification system
   const notification = useNotification();
 
-  // Load tất cả todos để đếm filter (không phân trang)
-  const loadAllTodos = useCallback(async () => {
+  // Load thống kê để đếm filter
+  const loadStatistics = useCallback(async () => {
     try {
-      const data = await todoService.getAllTodos(
-        1, 
-        1000, // Lấy tất cả todos
-        '',
-        '', // Không filter
-        '', // Không filter
-        '',
-        'createdAt'
-      );
-      
-      const todosData = data.data || data;
-      const allTodosList = todosData?.todos || [];
-      setAllTodos(allTodosList);
-      
+      const stats = await todoService.getTodosStatistics();
+      setStatistics(stats);
     } catch (err) {
-      console.error('❌ Error loading all todos for filter counts:', err);
+      console.error('❌ Error loading statistics:', err);
     }
   }, []);
 
@@ -134,8 +122,8 @@ export default function TodoApp() {
   // Load todos khi filter / page thay đổi
   useEffect(() => {
     loadTodos();
-    loadAllTodos(); // Load tất cả todos để đếm filter
-  }, [loadTodos, loadAllTodos]);
+    loadStatistics(); // Load thống kê để đếm filter
+  }, [loadTodos, loadStatistics]);
 
   // 📹 Lọc tìm kiếm bằng Fuse.js ở frontend
   const fuse = new Fuse(todos, {
@@ -171,17 +159,37 @@ export default function TodoApp() {
   const handleSubmitTodo = async (todoData) => {
     try {
       if (editingTodo) {
+        // Cập nhật local state ngay lập tức
+        setTodos(prevTodos => 
+          prevTodos.map(todo => 
+            todo.id === editingTodo.id 
+              ? { ...todo, ...todoData, updatedAt: new Date().toISOString() }
+              : todo
+          )
+        );
+        
         await todoService.updateTodo(editingTodo.id, todoData);
         notification.showSuccess('Cập nhật todo thành công!');
       } else {
-        await todoService.createTodo(todoData);
+        const newTodo = await todoService.createTodo(todoData);
+        // Thêm todo mới vào đầu danh sách
+        setTodos(prevTodos => [newTodo.data, ...prevTodos]);
         notification.showSuccess('Tạo todo mới thành công!');
       }
+      
       setShowForm(false);
       setEditingTodo(null);
-      await loadTodos(true); // Giữ nguyên scroll position
-      await loadAllTodos(); // Cập nhật số lượng filter
+      await loadStatistics(); // Chỉ cập nhật statistics
     } catch (err) {
+      // Nếu lỗi và đang edit, revert lại state
+      if (editingTodo) {
+        setTodos(prevTodos => 
+          prevTodos.map(todo => 
+            todo.id === editingTodo.id ? editingTodo : todo
+          )
+        );
+      }
+      
       const errorMsg = editingTodo ? 'Không thể cập nhật todo' : 'Không thể tạo todo';
       notification.showError(`${errorMsg}: ${err.message}`);
       setError(errorMsg);
@@ -192,11 +200,15 @@ export default function TodoApp() {
     const confirmDelete = window.confirm('Bạn có chắc chắn muốn xóa todo này?');
     if (confirmDelete) {
       try {
+        // Xóa khỏi local state ngay lập tức
+        setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+        
         await todoService.deleteTodo(id);
         notification.showSuccess('Xóa todo thành công!');
-        await loadTodos(true); // Giữ nguyên scroll position
-        await loadAllTodos(); // Cập nhật số lượng filter
+        await loadStatistics(); // Chỉ cập nhật statistics
       } catch (err) {
+        // Nếu lỗi, reload lại để đồng bộ
+        await loadTodos(true);
         notification.showError(`Không thể xóa todo: ${err.message}`);
         setError('Không thể xóa todo');
       }
@@ -205,13 +217,50 @@ export default function TodoApp() {
 
   const handleToggleTodo = async (id, completed) => {
     try {
+      // Cập nhật local state ngay lập tức để tránh nhấp nháy
+      setTodos(prevTodos => 
+        prevTodos.map(todo => 
+          todo.id === id ? { ...todo, completed, updatedAt: new Date().toISOString() } : todo
+        )
+      );
+      
+      // Gọi API để cập nhật backend
       await todoService.updateTodo(id, { completed });
+      
       const statusMsg = completed ? 'hoàn thành' : 'chưa hoàn thành';
       notification.showSuccess(`Đã đánh dấu todo ${statusMsg}!`);
-      await loadTodos(true); // Giữ nguyên scroll position
-      await loadAllTodos(); // Cập nhật số lượng filter
+      
+      // Chỉ cập nhật statistics, không reload todos
+      await loadStatistics();
     } catch (err) {
+      // Nếu lỗi, revert lại state
+      setTodos(prevTodos => 
+        prevTodos.map(todo => 
+          todo.id === id ? { ...todo, completed: !completed } : todo
+        )
+      );
       notification.showError(`Không thể cập nhật trạng thái todo: ${err.message}`);
+      setError('Không thể cập nhật todo');
+    }
+  };
+
+  // Callback để cập nhật todo từ inline edit
+  const handleInlineUpdate = async (id, updatedData) => {
+    try {
+      // Cập nhật local state ngay lập tức
+      setTodos(prevTodos => 
+        prevTodos.map(todo => 
+          todo.id === id ? { ...todo, ...updatedData, updatedAt: new Date().toISOString() } : todo
+        )
+      );
+      
+      // Gọi API để cập nhật backend
+      await todoService.updateTodo(id, updatedData);
+      
+      notification.showSuccess('Cập nhật todo thành công!');
+      await loadStatistics(); // Chỉ cập nhật statistics
+    } catch (err) {
+      notification.showError(`Không thể cập nhật todo: ${err.message}`);
       setError('Không thể cập nhật todo');
     }
   };
@@ -258,7 +307,7 @@ export default function TodoApp() {
         // Reload dữ liệu nếu có todos mới
         if (totalImported > 0) {
           await loadTodos(true); // Giữ nguyên scroll position
-          await loadAllTodos(); // Cập nhật số lượng filter
+          await loadStatistics(); // Cập nhật số lượng filter
         }
       } else {
         throw new Error(result.message || 'Phản hồi không hợp lệ từ server');
@@ -325,7 +374,7 @@ export default function TodoApp() {
         <FilterBar 
           filters={filters} 
           onFilterChange={handleFilterChange}
-          todos={allTodos}
+          statistics={statistics}
         />
 
         {showForm && (
@@ -357,9 +406,14 @@ export default function TodoApp() {
                 onEdit={handleEditTodo}
                 onDelete={handleDeleteTodo}
                 onToggle={handleToggleTodo}
+                onInlineUpdate={handleInlineUpdate}
                 onUpdate={async (preserveScroll) => {
-                  await loadTodos(preserveScroll);
-                  await loadAllTodos();
+                  // Chỉ reload khi cần thiết (ví dụ: upload file, delete attachment)
+                  // Không reload khi edit inline để tránh scroll lên đầu
+                  if (preserveScroll !== false) {
+                    await loadTodos(preserveScroll);
+                    await loadStatistics();
+                  }
                 }}
               />
             ))

@@ -1,283 +1,261 @@
-const todoModel = require('../models/todoModel');
+const todoRepository = require('../repositories/todoRepository');
+const todoBusinessLogic = require('../business/todoBusinessLogic');
+const todoValidator = require('../validators/todoValidator');
 const fs = require('fs');
 const path = require('path');
 
+// Service Layer - Điều phối giữa các layer
+
 // Lấy tất cả todos với phân trang và lọc
 exports.getAllTodos = async ({ page = 1, limit = 5, search = '', priority = '', status = '', sortBy = 'createdAt' }) => {
-  let todos = todoModel.readTodos();
-
-  // Lọc dữ liệu
-  if (search) {
-    todos = todos.filter(todo =>
-      todo.title.toLowerCase().includes(search.toLowerCase()) ||
-      todo.description.toLowerCase().includes(search.toLowerCase())
-    );
-  }
-  
-  // Sửa logic filter priority - chuẩn hóa priority trước khi so sánh
-  if (priority) {
-    todos = todos.filter(todo => {
-      const todoPriority = (todo.priority || 'medium').toLowerCase();
-      return todoPriority === priority.toLowerCase();
+  try {
+    // Lấy tất cả todos từ repository
+    const allTodos = todoRepository.readAll();
+    
+    // Áp dụng filters qua business logic
+    const filteredTodos = todoBusinessLogic.applyFilters(allTodos, {
+      search,
+      priority,
+      status
     });
+    
+    // Áp dụng sorting qua business logic
+    const sortedTodos = todoBusinessLogic.applySorting(filteredTodos, sortBy);
+    
+    // Áp dụng pagination qua business logic
+    return todoBusinessLogic.applyPagination(sortedTodos, page, limit);
+    
+  } catch (error) {
+    throw new Error(`Lỗi lấy danh sách todos: ${error.message}`);
   }
-  
-  if (status === 'completed') todos = todos.filter(todo => todo.completed);
-  if (status === 'pending') todos = todos.filter(todo => !todo.completed);
-
-
-  // Sắp xếp
-  todos.sort((a, b) => {
-    switch (sortBy) {
-      case 'dueDate':
-        // Sắp xếp theo thời hạn: sắp tới trước, xa nhất sau, quá hạn cuối, không có hạn cuối cùng
-        const aDate = a.dueDate ? new Date(a.dueDate) : null;
-        const bDate = b.dueDate ? new Date(b.dueDate) : null;
-        const now = new Date();
-        
-        // Không có ngày hết hạn -> cuối cùng
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
-        
-        const aOverdue = aDate < now && !a.completed;
-        const bOverdue = bDate < now && !b.completed;
-        
-        // Cả 2 đều quá hạn -> sắp xếp theo ngày (gần nhất trước)
-        if (aOverdue && bOverdue) return bDate - aDate;
-        
-        // Cả 2 đều chưa quá hạn -> sắp xếp theo ngày (gần nhất trước)
-        if (!aOverdue && !bOverdue) return aDate - bDate;
-        
-        // Một cái quá hạn, một cái chưa -> chưa quá hạn lên trước
-        if (aOverdue && !bOverdue) return 1;
-        if (!aOverdue && bOverdue) return -1;
-        
-        return 0;
-        
-      case 'priority':
-        const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
-        const aPriority = priorityOrder[a.priority] || 0;
-        const bPriority = priorityOrder[b.priority] || 0;
-        return bPriority - aPriority; // Ưu tiên cao trước
-        
-      case 'title':
-        return a.title.localeCompare(b.title);
-        
-      case 'status':
-        if (a.completed !== b.completed) {
-          return a.completed ? 1 : -1; // Chưa hoàn thành trước
-        }
-        return new Date(b.createdAt) - new Date(a.createdAt);
-        
-      case 'createdAt':
-      default:
-        return new Date(b.createdAt) - new Date(a.createdAt); // Mới nhất trước
-    }
-  });
-
-  // Phân trang
-  const pageNum = parseInt(page);
-  const limitNum = parseInt(limit);
-  const startIndex = (pageNum - 1) * limitNum;
-  const endIndex = startIndex + limitNum;
-
-  return {
-    todos: todos.slice(startIndex, endIndex),
-    pagination: {
-      currentPage: pageNum,
-      totalPages: Math.ceil(todos.length / limitNum),
-      totalTodos: todos.length,
-      limit: limitNum,
-      hasNext: pageNum < Math.ceil(todos.length / limitNum),
-      hasPrev: pageNum > 1
-    }
-  };
 };
 
-exports.createTodo = async ({ title, description = '', priority = 'medium', dueDate }) => {
-  if (!title) throw new Error('Title is required');
-  const todos = todoModel.readTodos();
-  const newTodo = {
-    id: Date.now().toString(),
-    title,
-    description,
-    completed: false,
-    priority,
-    dueDate: dueDate || null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    attachments: []
-  };
-  todos.push(newTodo);
-  todoModel.writeTodos(todos);
-  return newTodo;
+// Tạo todo mới
+exports.createTodo = async (todoData) => {
+  try {
+    // Validate dữ liệu qua validator - isUpdate = false cho tạo mới
+    const errors = todoValidator.validateTodoData(todoData, false);
+    if (errors.length > 0) {
+      throw new Error(errors.join(', '));
+    }
+    
+    // Sanitize input
+    const sanitizedData = todoValidator.sanitizeInput(todoData);
+    
+    // Tạo todo object qua business logic
+    const newTodo = todoBusinessLogic.createNewTodo(sanitizedData);
+    
+    // Lưu vào database qua repository
+    return todoRepository.create(newTodo);
+    
+  } catch (error) {
+    throw new Error(`Lỗi tạo todo: ${error.message}`);
+  }
 };
 
+// Cập nhật todo
 exports.updateTodo = async (id, updates) => {
-  const todos = todoModel.readTodos();
-  const idx = todos.findIndex(t => t.id === id);
-  if (idx === -1) return null;
-  
-  const oldTodo = { ...todos[idx] };
-  const now = new Date().toISOString();
-  
-  // Tạo lịch sử chỉnh sửa
-  const editHistory = oldTodo.editHistory || [];
-  editHistory.push({
-    editedAt: now,
-    changes: updates,
-    previousValues: {
-      title: oldTodo.title,
-      description: oldTodo.description,
-      priority: oldTodo.priority,
-      dueDate: oldTodo.dueDate,
-      completed: oldTodo.completed
+  try {
+    // Validate ID
+    const idErrors = todoValidator.validateId(id);
+    if (idErrors.length > 0) {
+      throw new Error(idErrors.join(', '));
     }
-  });
-  
-  todos[idx] = { 
-    ...oldTodo, 
-    ...updates, 
-    updatedAt: now,
-    editHistory: editHistory
-  };
-  
-  todoModel.writeTodos(todos);
-  return todos[idx];
+    
+    // Validate dữ liệu update - truyền flag isUpdate = true
+    const errors = todoValidator.validateTodoData(updates, true);
+    if (errors.length > 0) {
+      throw new Error(errors.join(', '));
+    }
+    
+    // Sanitize input
+    const sanitizedUpdates = todoValidator.sanitizeInput(updates);
+    
+    // Lấy todo hiện tại
+    const existingTodo = todoRepository.findById(id);
+    if (!existingTodo) {
+      throw new Error('Todo không tồn tại');
+    }
+    
+    // Cập nhật với lịch sử qua business logic (không chuẩn hóa toàn bộ)
+    const updatedTodo = todoBusinessLogic.updateTodoWithHistory(existingTodo, sanitizedUpdates);
+    
+    // Lưu vào database qua repository
+    return todoRepository.update(id, updatedTodo);
+    
+  } catch (error) {
+    throw new Error(`Lỗi cập nhật todo: ${error.message}`);
+  }
 };
 
+// Xóa todo
 exports.deleteTodo = async (id) => {
-  const todos = todoModel.readTodos();
-  const idx = todos.findIndex(t => t.id === id);
-  if (idx === -1) return false;
-
-  // delete attached files
-  const todo = todos[idx];
-  if (todo.attachments) {
-    todo.attachments.forEach(att => {
-      const filePath = path.join(__dirname, '..', 'uploads', att.filename);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
+  try {
+    // Validate ID
+    const idErrors = todoValidator.validateId(id);
+    if (idErrors.length > 0) {
+      throw new Error(idErrors.join(', '));
+    }
+    
+    // Kiểm tra todo có tồn tại không
+    const existingTodo = todoRepository.findById(id);
+    if (!existingTodo) {
+      throw new Error('Todo không tồn tại');
+    }
+    
+    // Xóa files attachments trước
+    if (existingTodo.attachments) {
+      existingTodo.attachments.forEach(att => {
+        const filePath = path.join(__dirname, '..', 'uploads', att.filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      });
+    }
+    
+    // Xóa todo qua repository
+    return todoRepository.delete(id);
+    
+  } catch (error) {
+    throw new Error(`Lỗi xóa todo: ${error.message}`);
   }
-
-  todos.splice(idx, 1);
-  todoModel.writeTodos(todos);
-  return true;
 };
 
 
 // Upload file ảnh vào todo
 exports.uploadFile = async (todoId, file) => {
-  if (!file) throw new Error('No file uploaded');
-  
-  const todos = todoModel.readTodos();
-  const todoIndex = todos.findIndex(t => t.id === todoId);
-  
-  if (todoIndex === -1) {
-    // Xóa file nếu không tìm thấy todo
-    try {
-      fs.unlinkSync(file.path);
-    } catch (error) {
-      console.warn('Không thể xóa file:', error.message);
-    }
-    return null;
-  }
-  
-  // Kiểm tra định dạng file ảnh
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  if (!allowedTypes.includes(file.mimetype)) {
-    // Xóa file không hợp lệ
-    try {
-      fs.unlinkSync(file.path);
-    } catch (error) {
-      console.warn('Không thể xóa file không hợp lệ:', error.message);
-    }
-    throw new Error('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)');
-  }
-  
-  // Kiểm tra kích thước file (tối đa 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    try {
-      fs.unlinkSync(file.path);
-    } catch (error) {
-      console.warn('Không thể xóa file quá lớn:', error.message);
-    }
-    throw new Error('File ảnh quá lớn. Kích thước tối đa là 5MB');
-  }
-  
-  const attachment = {
-    id: Date.now().toString(),
-    filename: file.filename,
-    originalName: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size,
-    uploadedAt: new Date().toISOString(),
-    url: `/uploads/${file.filename}`
-  };
-  
-  // Tạo mảng attachments nếu chưa có
-  if (!todos[todoIndex].attachments) {
-    todos[todoIndex].attachments = [];
-  }
-  
-  todos[todoIndex].attachments.push(attachment);
-  todos[todoIndex].updatedAt = new Date().toISOString();
-  
-  todoModel.writeTodos(todos);
-  
-  return {
-    todo: todos[todoIndex],
-    attachment: attachment
-  };
-};
-
-/**
- * Remove file attachment from a todo
- * @param {string} todoId Todo ID
- * @param {string} attachmentId Attachment ID
- * @returns {Object} Updated todo
- */
-exports.removeAttachment = async (todoId, attachmentId) => {
-  const todos = todoModel.readTodos();
-  const todoIndex = todos.findIndex(t => t.id === todoId);
-  
-  if (todoIndex === -1) return null;
-  
-  const todo = todos[todoIndex];
-  if (!todo.attachments) return todo;
-  
-  const attachmentIndex = todo.attachments.findIndex(a => a.id === attachmentId);
-  if (attachmentIndex === -1) return todo;
-  
-  const attachment = todo.attachments[attachmentIndex];
-  
-  // Delete file from filesystem
-  const filePath = path.join(__dirname, '..', 'uploads', attachment.filename);
   try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Validate ID
+    const idErrors = todoValidator.validateId(todoId);
+    if (idErrors.length > 0) {
+      throw new Error(idErrors.join(', '));
     }
+    
+    // Validate file
+    const fileErrors = todoValidator.validateFileUpload(file);
+    if (fileErrors.length > 0) {
+      // Xóa file không hợp lệ
+      try {
+        fs.unlinkSync(file.path);
+      } catch (error) {
+        console.warn('Không thể xóa file:', error.message);
+      }
+      throw new Error(fileErrors.join(', '));
+    }
+
+    // Kiểm tra todo có tồn tại không
+    const existingTodo = todoRepository.findById(todoId);
+    if (!existingTodo) {
+      // Xóa file nếu không tìm thấy todo
+      try {
+        fs.unlinkSync(file.path);
+      } catch (error) {
+        console.warn('Không thể xóa file:', error.message);
+      }
+      throw new Error('Todo không tồn tại');
+    }
+
+    // Tạo attachment object qua business logic
+    const attachment = todoBusinessLogic.createAttachment(file);
+    
+    // Thêm attachment vào todo
+    const updatedTodo = { ...existingTodo };
+    if (!updatedTodo.attachments) {
+      updatedTodo.attachments = [];
+    }
+    updatedTodo.attachments.push(attachment);
+    updatedTodo.updatedAt = new Date().toISOString();
+    
+    // Lưu vào database
+    todoRepository.update(todoId, updatedTodo);
+    
+    return {
+      todo: updatedTodo,
+      attachment: attachment
+    };
+    
   } catch (error) {
-    console.warn('Could not delete attachment file:', error.message);
+    throw new Error(`Lỗi upload file: ${error.message}`);
   }
-  
-  // Remove from attachments array
-  todo.attachments.splice(attachmentIndex, 1);
-  todo.updatedAt = new Date().toISOString();
-  
-  todoModel.writeTodos(todos);
-  
-  return todo;
 };
 
-exports.exportTodos = () => {
-  const todos = todoModel.readTodos();
-  return {
-    exportedAt: new Date().toISOString(),
-    totalTodos: todos.length,
-    todos
-  };
+// Xóa attachment khỏi todo  
+exports.removeAttachment = async (todoId, attachmentId) => {
+  try {
+    // Validate IDs
+    const idErrors = todoValidator.validateId(todoId);
+    if (idErrors.length > 0) {
+      throw new Error(idErrors.join(', '));
+    }
+
+    const attachmentIdErrors = todoValidator.validateId(attachmentId);
+    if (attachmentIdErrors.length > 0) {
+      throw new Error('Attachment ID không hợp lệ');
+    }
+
+    // Lấy todo hiện tại
+    const existingTodo = todoRepository.findById(todoId);
+    if (!existingTodo) {
+      throw new Error('Todo không tồn tại');
+    }
+
+    if (!existingTodo.attachments || existingTodo.attachments.length === 0) {
+      throw new Error('Todo không có attachment nào');
+    }
+
+    // Tìm attachment cần xóa
+    const attachmentIndex = existingTodo.attachments.findIndex(a => a.id === attachmentId);
+    if (attachmentIndex === -1) {
+      throw new Error('Attachment không tồn tại');
+    }
+
+    const attachment = existingTodo.attachments[attachmentIndex];
+    
+    // Xóa file từ filesystem
+    const filePath = path.join(__dirname, '..', 'uploads', attachment.filename);
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (error) {
+      console.warn('Không thể xóa file attachment:', error.message);
+    }
+    
+    // Xóa attachment khỏi array
+    const updatedTodo = { ...existingTodo };
+    updatedTodo.attachments.splice(attachmentIndex, 1);
+    updatedTodo.updatedAt = new Date().toISOString();
+    
+    // Lưu vào database qua repository
+    return todoRepository.update(todoId, updatedTodo);
+    
+  } catch (error) {
+    throw new Error(`Lỗi xóa attachment: ${error.message}`);
+  }
+};
+
+// Lấy thống kê todos
+exports.getTodosStatistics = async () => {
+  try {
+    const allTodos = todoRepository.readAll();
+    return todoBusinessLogic.calculateStatistics(allTodos);
+  } catch (error) {
+    throw new Error(`Lỗi lấy thống kê: ${error.message}`);
+  }
+};
+
+// Export todos
+exports.exportTodos = async () => {
+  try {
+    const todos = todoRepository.readAll();
+    return {
+      exportedAt: new Date().toISOString(),
+      totalTodos: todos.length,
+      todos
+    };
+  } catch (error) {
+    throw new Error(`Lỗi export todos: ${error.message}`);
+  }
 };
 
 /**
@@ -290,7 +268,7 @@ exports.importTodos = (file) => {
 
   try {
     // Đọc và parse dữ liệu từ file JSON
-    const content = fs.readFileSync(file.path, 'utf8');
+  const content = fs.readFileSync(file.path, 'utf8');
     let importData;
     
     try {
@@ -300,11 +278,11 @@ exports.importTodos = (file) => {
     }
 
     // Xác định danh sách todos cần import
-    let todosToImport = [];
-    if (Array.isArray(importData)) {
-      todosToImport = importData;
+  let todosToImport = [];
+  if (Array.isArray(importData)) {
+    todosToImport = importData;
     } else if (importData.todos && Array.isArray(importData.todos)) {
-      todosToImport = importData.todos;
+    todosToImport = importData.todos;
     } else {
       throw new Error('File không chứa dữ liệu todos hợp lệ');
     }
@@ -313,7 +291,7 @@ exports.importTodos = (file) => {
       throw new Error('File không chứa todos nào để import');
     }
 
-    const currentTodos = todoModel.readTodos();
+    const currentTodos = todoRepository.readAll();
 
     // Các trường chính để so sánh trùng lặp
     const fieldsToCompare = ["title", "description", "priority", "dueDate"];
@@ -324,7 +302,7 @@ exports.importTodos = (file) => {
      * @param {any} value Giá trị cần chuẩn hóa
      * @returns {any} Giá trị đã chuẩn hóa
      */
-    const normalizeField = (field, value) => {
+  const normalizeField = (field, value) => {
       switch (field) {
         case 'title':
         case 'description':
@@ -358,7 +336,7 @@ exports.importTodos = (file) => {
      */
     const isDuplicate = (importTodo, existingTodos) => {
       return existingTodos.some(existingTodo => {
-        return fieldsToCompare.every(field => {
+      return fieldsToCompare.every(field => {
           const importValue = normalizeField(field, importTodo[field]);
           const existingValue = normalizeField(field, existingTodo[field]);
           return importValue === existingValue;
@@ -399,22 +377,22 @@ exports.importTodos = (file) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       attachments: todo.attachments || [],
-      importedAt: new Date().toISOString()
-    }));
+    importedAt: new Date().toISOString()
+  }));
 
     // Cập nhật danh sách todos
     const updatedTodos = [...currentTodos, ...processedTodos];
-    todoModel.writeTodos(updatedTodos);
+    todoRepository.writeAll(updatedTodos);
 
-    // Xóa file tạm
+  // Xóa file tạm
     try {
-      fs.unlinkSync(file.path);
+  fs.unlinkSync(file.path);
     } catch (unlinkError) {
       console.warn('Không thể xóa file tạm:', unlinkError.message);
     }
 
     // Trả về kết quả chi tiết
-    return {
+  return {
       success: true,
       message: `Import hoàn tất: ${processedTodos.length} todos mới, ${duplicatedTodos.length} todos trùng lặp`,
       data: {

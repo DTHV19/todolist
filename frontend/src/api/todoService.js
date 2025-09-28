@@ -164,6 +164,27 @@ export const importTodos = async (file) => {
 };
 
 /**
+ * Get todos statistics
+ * @returns {Promise<Object>} Statistics data
+ */
+export const getTodosStatistics = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/statistics`);
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.error?.details || result.error?.message || 'Failed to get statistics');
+    }
+    
+    return result.data || result;
+  } catch (error) {
+    console.error('Error getting statistics:', error);
+    throw new Error(error.message || 'Failed to get statistics');
+  }
+};
+
+/**
  * Export todos to JSON format
  * @returns {Promise<Object>} Export data
  */
@@ -262,7 +283,8 @@ const TodoService = {
   importTodos,
   exportTodos,
   uploadFile,
-  removeAttachment
+  removeAttachment,
+  getTodosStatistics
 };
 
 export default TodoService;

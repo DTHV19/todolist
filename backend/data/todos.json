@@ -894,12 +894,53 @@
     "id": "1701234568082",
     "title": "Học Adobe Illustrator cơ bản",
     "description": "Hoàn thành khóa học vector design và tạo logo đơn giản",
-    "completed": false,
+    "completed": true,
     "priority": "medium",
     "dueDate": "2025-02-28",
     "createdAt": "2025-01-18T16:40:00.000Z",
-    "updatedAt": "2025-01-18T16:40:00.000Z",
-    "attachments": []
+    "updatedAt": "2025-09-28T14:57:40.124Z",
+    "attachments": [],
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:55:56.939Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học Adobe Illustrator cơ bản",
+          "description": "Hoàn thành khóa học vector design và tạo logo đơn giản",
+          "priority": "medium",
+          "dueDate": "2025-02-28",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:57:22.372Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học Adobe Illustrator cơ bản",
+          "description": "Hoàn thành khóa học vector design và tạo logo đơn giản",
+          "priority": "medium",
+          "dueDate": "2025-02-28",
+          "completed": true
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:57:40.124Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học Adobe Illustrator cơ bản",
+          "description": "Hoàn thành khóa học vector design và tạo logo đơn giản",
+          "priority": "medium",
+          "dueDate": "2025-02-28",
+          "completed": false
+        }
+      }
+    ]
   },
   {
     "id": "1701234568083",
@@ -1049,22 +1090,84 @@
     "title": "Lên kế hoạch du lịch Iceland",
     "description": "Research về Northern Lights, Blue Lagoon và lập lộ trình Ring Road",
     "completed": false,
-    "priority": "high",
+    "priority": "low",
     "dueDate": "2025-03-30",
     "createdAt": "2025-01-31T13:20:00.000Z",
-    "updatedAt": "2025-01-31T13:20:00.000Z",
-    "attachments": []
+    "updatedAt": "2025-09-28T14:28:01.714Z",
+    "attachments": [
+      {
+        "id": "1759069650401",
+        "filename": "1759069650388-Screenshot 2024-09-28 114313.png",
+        "originalName": "Screenshot 2024-09-28 114313.png",
+        "mimetype": "image/png",
+        "size": 129824,
+        "uploadedAt": "2025-09-28T14:27:30.401Z",
+        "url": "/uploads/1759069650388-Screenshot 2024-09-28 114313.png"
+      }
+    ],
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:27:42.408Z",
+        "changes": {
+          "title": "Lên kế hoạch du lịch Iceland",
+          "description": "Research về Northern Lights, Blue Lagoon và lập lộ trình Ring Road",
+          "priority": "low",
+          "dueDate": "2025-03-30"
+        },
+        "previousValues": {
+          "title": "Lên kế hoạch du lịch Iceland",
+          "description": "Research về Northern Lights, Blue Lagoon và lập lộ trình Ring Road",
+          "priority": "high",
+          "dueDate": "2025-03-30",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:28:01.714Z",
+        "changes": {
+          "title": "Lên kế hoạch du lịch Iceland",
+          "description": "Research về Northern Lights, Blue Lagoon và lập lộ trình Ring Road",
+          "priority": "low",
+          "dueDate": "2025-03-30"
+        },
+        "previousValues": {
+          "title": "Lên kế hoạch du lịch Iceland",
+          "description": "Research về Northern Lights, Blue Lagoon và lập lộ trình Ring Road",
+          "priority": "low",
+          "dueDate": "2025-03-30",
+          "completed": false
+        }
+      }
+    ]
   },
   {
     "id": "1701234568097",
     "title": "Đọc sách về mindfulness",
     "description": "Đọc 'The Power of Now' và thực hành meditation 15 phút mỗi ngày",
     "completed": false,
-    "priority": "medium",
+    "priority": "low",
     "dueDate": "2025-03-18",
     "createdAt": "2025-02-01T20:10:00.000Z",
-    "updatedAt": "2025-02-01T20:10:00.000Z",
-    "attachments": []
+    "updatedAt": "2025-09-28T14:27:52.413Z",
+    "attachments": [],
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:27:52.413Z",
+        "changes": {
+          "title": "Đọc sách về mindfulness",
+          "description": "Đọc 'The Power of Now' và thực hành meditation 15 phút mỗi ngày",
+          "priority": "low",
+          "dueDate": "2025-03-18"
+        },
+        "previousValues": {
+          "title": "Đọc sách về mindfulness",
+          "description": "Đọc 'The Power of Now' và thực hành meditation 15 phút mỗi ngày",
+          "priority": "medium",
+          "dueDate": "2025-03-18",
+          "completed": false
+        }
+      }
+    ]
   },
   {
     "id": "1701234568098",
@@ -1117,5 +1220,405 @@
         "url": "/uploads/1758996552571-Screenshot 2025-09-27 115300.png"
       }
     ]
+  },
+  {
+    "id": "1759069719202_0_f1mmskovi",
+    "title": "Học React hooks 1",
+    "description": "Tìm hiểu useState, useEffect, useContext và các hooks khác trong React",
+    "completed": false,
+    "priority": "high",
+    "dueDate": "2024-12-01",
+    "createdAt": "2025-09-28T14:28:39.202Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_1_r54qrozvx",
+    "title": "Học React hooks 2",
+    "description": "Tìm hiểu useReducer và custom hooks",
+    "completed": true,
+    "priority": "medium",
+    "dueDate": "2024-12-02",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_2_xugwcc3be",
+    "title": "Học React hooks 3",
+    "description": "Tìm hiểu useMemo, useCallback",
+    "completed": false,
+    "priority": "low",
+    "dueDate": "2024-12-03",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_3_p30e25cp9",
+    "title": "Thiết kế database 1",
+    "description": "Vẽ ERD và tạo các bảng cơ bản",
+    "completed": false,
+    "priority": "high",
+    "dueDate": "2024-12-04",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_4_6eynahmmx",
+    "title": "Thiết kế database 2",
+    "description": "Tối ưu khóa chính và quan hệ",
+    "completed": true,
+    "priority": "medium",
+    "dueDate": "2024-12-05",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_5_mub11blzo",
+    "title": "Viết unit test 1",
+    "description": "Tạo test cases cho API routes cơ bản",
+    "completed": false,
+    "priority": "low",
+    "dueDate": "2024-12-06",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_6_d1gbktlyx",
+    "title": "Viết unit test 2",
+    "description": "Kiểm tra các middleware",
+    "completed": true,
+    "priority": "high",
+    "dueDate": "2024-12-07",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_7_p19l2e6b6",
+    "title": "Viết unit test 3",
+    "description": "Kiểm tra các endpoint POST và PUT",
+    "completed": false,
+    "priority": "medium",
+    "dueDate": "2024-12-08",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719203_8_9jhk7ywdn",
+    "title": "Học Node.js 1",
+    "description": "Tìm hiểu Express cơ bản",
+    "completed": true,
+    "priority": "high",
+    "dueDate": "2024-12-09",
+    "createdAt": "2025-09-28T14:28:39.203Z",
+    "updatedAt": "2025-09-28T14:28:39.203Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.203Z"
+  },
+  {
+    "id": "1759069719204_21_sk4lwwr74",
+    "title": "Học TypeScript 2",
+    "description": "Advanced: generics, utility types",
+    "completed": false,
+    "priority": "medium",
+    "dueDate": "2024-12-22",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:41:30.881Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z",
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:41:28.918Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học TypeScript 2",
+          "description": "Advanced: generics, utility types",
+          "priority": "medium",
+          "dueDate": "2024-12-22",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:30.881Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học TypeScript 2",
+          "description": "Advanced: generics, utility types",
+          "priority": "medium",
+          "dueDate": "2024-12-22",
+          "completed": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "1759069719204_22_pz2skwqq2",
+    "title": "Học TypeScript 3",
+    "description": "Decorators và namespace",
+    "completed": true,
+    "priority": "low",
+    "dueDate": "2024-12-23",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_23_j2nlp09ug",
+    "title": "Học CSS 1",
+    "description": "Flexbox cơ bản",
+    "completed": false,
+    "priority": "high",
+    "dueDate": "2024-12-24",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:41:34.903Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z",
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:41:33.383Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học CSS 1",
+          "description": "Flexbox cơ bản",
+          "priority": "high",
+          "dueDate": "2024-12-24",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:34.903Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học CSS 1",
+          "description": "Flexbox cơ bản",
+          "priority": "high",
+          "dueDate": "2024-12-24",
+          "completed": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "1759069719204_24_i4u2tg9qh",
+    "title": "Học CSS 2",
+    "description": "Grid layout cơ bản",
+    "completed": true,
+    "priority": "medium",
+    "dueDate": "2024-12-25",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_25_k2vcjqk7g",
+    "title": "Học CSS 3",
+    "description": "Animations và transitions",
+    "completed": false,
+    "priority": "low",
+    "dueDate": "2024-12-26",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_26_23jff37dm",
+    "title": "Học JavaScript 1",
+    "description": "ES6 cơ bản: let, const, arrow functions",
+    "completed": true,
+    "priority": "high",
+    "dueDate": "2024-12-27",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_28_tsxct8z5y",
+    "title": "Học JavaScript 3",
+    "description": "Event loop và closure",
+    "completed": true,
+    "priority": "low",
+    "dueDate": "2024-12-29",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_29_twueeb2s5",
+    "title": "Học React 4",
+    "description": "Context API và performance optimization",
+    "completed": false,
+    "priority": "high",
+    "dueDate": "2024-12-30",
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:41:48.853Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z",
+    "editHistory": [
+      {
+        "editedAt": "2025-09-28T14:41:39.678Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:41.313Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": true
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:44.313Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:45.820Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": true
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:48.142Z",
+        "changes": {
+          "completed": true
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": false
+        }
+      },
+      {
+        "editedAt": "2025-09-28T14:41:48.853Z",
+        "changes": {
+          "completed": false
+        },
+        "previousValues": {
+          "title": "Học React 4",
+          "description": "Context API và performance optimization",
+          "priority": "high",
+          "dueDate": "2024-12-30",
+          "completed": true
+        }
+      }
+    ]
+  },
+  {
+    "id": "1759069719204_30_aaxso7y2w",
+    "title": "Mua sữa",
+    "description": "Mua sữa cho con",
+    "completed": false,
+    "priority": "High",
+    "dueDate": null,
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_31_tilaogwsh",
+    "title": "Gọi điện khách hàng",
+    "description": "Follow up hợp đồng",
+    "completed": false,
+    "priority": "Medium",
+    "dueDate": null,
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_32_cl6ldqjkk",
+    "title": "Đi dạo",
+    "description": "Đi bộ 30 phút buổi sáng",
+    "completed": false,
+    "priority": "Low",
+    "dueDate": null,
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_33_vyo1nbg70",
+    "title": "Học NodeJS",
+    "description": "Hoàn thành bài tập TodoList",
+    "completed": false,
+    "priority": "High",
+    "dueDate": null,
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
+  },
+  {
+    "id": "1759069719204_34_28rv0ef9k",
+    "title": "Thanh toán hóa đơn",
+    "description": "Thanh toán điện nước",
+    "completed": false,
+    "priority": "Medium",
+    "dueDate": null,
+    "createdAt": "2025-09-28T14:28:39.204Z",
+    "updatedAt": "2025-09-28T14:28:39.204Z",
+    "attachments": [],
+    "importedAt": "2025-09-28T14:28:39.204Z"
   }
 ]

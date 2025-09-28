@@ -28,6 +28,9 @@ router.post('/', todoController.createTodo);
 router.put('/:id', todoController.updateTodo);
 router.delete('/:id', todoController.deleteTodo);
 
+// Statistics routes
+router.get('/statistics', todoController.getTodosStatistics);
+
 // File attachment routes
 router.post('/:id/upload', upload.single('file'), todoController.uploadFile);
 router.delete('/:id/attachments/:attachmentId', todoController.removeAttachment);

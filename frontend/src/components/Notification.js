@@ -25,10 +25,10 @@ const NotificationItem = ({ notification, onClose }) => {
     // Hiện thông báo
     setTimeout(() => setIsVisible(true), 10);
 
-    // Tự động ẩn sau 5 giây
+    // Tự động ẩn sau 2 giây
     const timer = setTimeout(() => {
       handleClose();
-    }, 5000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);

@@ -3,7 +3,7 @@ import { Edit, Trash2, Upload, Calendar, Image, Check, X, Eye, Save, History, Cl
 import todoService from '../api/todoService';
 import { Toast, useToast } from './ToastNotification';
 
-export default function TodoItem({ todo, onEdit, onDelete, onToggle, onUpdate }) {
+export default function TodoItem({ todo, onEdit, onDelete, onToggle, onInlineUpdate, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -35,10 +35,9 @@ export default function TodoItem({ todo, onEdit, onDelete, onToggle, onUpdate })
     }
 
     try {
-      await todoService.updateTodo(todo.id, editData);
-      toast.showSuccess('Cập nhật todo thành công');
+      // Sử dụng callback từ App.js để cập nhật local state
+      await onInlineUpdate(todo.id, editData);
       setIsEditing(false);
-      if (onUpdate) onUpdate(true); // Giữ nguyên scroll position
     } catch (error) {
       toast.showError(`Không thể cập nhật todo: ${error.message}`);
     }
@@ -136,7 +135,7 @@ export default function TodoItem({ todo, onEdit, onDelete, onToggle, onUpdate })
   const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
 
   return (
-    <div className={`relative bg-white p-4 rounded-lg shadow-sm border-l-4 mb-3 ${
+    <div className={`relative bg-white p-4 rounded-lg shadow-sm border-l-4 mb-3 transition-all duration-300 ease-in-out hover:shadow-lg transform hover:-translate-y-1 ${
       todo.completed ? 'border-green-500 opacity-75' : 
       isOverdue ? 'border-red-500' :
       todo.priority === 'high' ? 'border-red-400' :
@@ -159,11 +158,11 @@ export default function TodoItem({ todo, onEdit, onDelete, onToggle, onUpdate })
               <div className="flex items-center gap-3 mb-2">
                 <button
                   onClick={() => onToggle(todo.id, !todo.completed)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ease-in-out transform hover:scale-105 ${
                     todo.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
-                  {todo.completed && <Check size={14} />}
+                  {todo.completed && <Check size={14} className="animate-pulse" />}
                 </button>
                 <h3 className={`font-medium ${todo.completed ? 'line-through text-gray-500' : ''}`}>
                   {todo.title}
@@ -277,9 +276,9 @@ export default function TodoItem({ todo, onEdit, onDelete, onToggle, onUpdate })
                         onChange={(e) => setEditData({ ...editData, priority: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="low">🟢 Thấp</option>
-                        <option value="medium">🟡 Trung bình</option>
-                        <option value="high">🔴 Cao</option>
+                        <option value="low">Thấp</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="high">Cao</option>
                       </select>
                     </div>
 

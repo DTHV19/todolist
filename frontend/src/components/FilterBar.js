@@ -1,63 +1,19 @@
 import React, { useMemo } from 'react';
-import { Calendar, Clock, ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 
-export default function FilterBar({ filters, onFilterChange, todos = [] }) {
-  // Tính toán số lượng todos cho mỗi category
+export default function FilterBar({ filters, onFilterChange, statistics }) {
+  // Sử dụng statistics từ API
   const counts = useMemo(() => {
-    console.log('🔢 Calculating counts for todos:', todos.length, 'todos');
-    
-    if (!todos || todos.length === 0) {
+    if (!statistics) {
       return {
         total: 0,
         priority: { high: 0, medium: 0, low: 0 },
         status: { completed: 0, pending: 0 }
       };
     }
-
-    const totalTodos = todos.length;
     
-    // Debug: kiểm tra dữ liệu
-    console.log('📊 Sample todos:', todos.slice(0, 3).map(t => ({
-      id: t.id,
-      title: t.title,
-      priority: t.priority,
-      completed: t.completed
-    })));
-    
-    // Đếm theo priority
-    const priorityCounts = {
-      high: todos.filter(t => {
-        const priority = (t.priority || 'medium').toLowerCase();
-        return priority === 'high';
-      }).length,
-      medium: todos.filter(t => {
-        const priority = (t.priority || 'medium').toLowerCase();
-        return priority === 'medium';
-      }).length,
-      low: todos.filter(t => {
-        const priority = (t.priority || 'medium').toLowerCase();
-        return priority === 'low';
-      }).length,
-    };
-    
-    // Đếm theo status
-    const statusCounts = {
-      completed: todos.filter(t => t.completed === true).length,
-      pending: todos.filter(t => t.completed !== true).length,
-    };
-    
-    console.log('📈 Calculated counts:', {
-      total: totalTodos,
-      priority: priorityCounts,
-      status: statusCounts
-    });
-    
-    return {
-      total: totalTodos,
-      priority: priorityCounts,
-      status: statusCounts
-    };
-  }, [todos]);
+    return statistics;
+  }, [statistics]);
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

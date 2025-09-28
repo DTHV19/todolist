@@ -193,6 +193,29 @@ exports.removeAttachment = async (req, res) => {
 };
 
 /**
+ * Get todos statistics
+ */
+exports.getTodosStatistics = async (req, res) => {
+  try {
+    const stats = await todoService.getTodosStatistics();
+    res.json({
+      success: true,
+      data: stats,
+      message: 'Lấy thống kê thành công'
+    });
+  } catch (err) {
+    console.error('Error in getTodosStatistics:', err);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Không thể lấy thống kê',
+        details: err.message
+      }
+    });
+  }
+};
+
+/**
  * Export todos to JSON format
  */
 exports.exportTodos = async (req, res) => {
